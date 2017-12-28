@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+<head>
+<title>Kopiro JSON-FS</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript" src="jquery.facebook.multifriend.select.js"></script>
+<link rel="stylesheet" href="jquery.facebook.multifriend.select.css" />
+<style type="text/css">
+html {
+background: #EEE url(http://kopiro.it/wp/wp-content/themes/minimal/img/bg.jpg) fixed repeat;
+color: #333;
+font: 13px 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+body {
+background: white;
+box-shadow: -2px 0 3px rgba(0,0,0,.2), 2px 0 3px rgba(0,0,0,.2), 0 -2px 2px rgba(0,0,0,.2), 0 2px 2px rgba(0,0,0,.2);
+width: 996px;
+text-align: center;
+margin: 10px auto;
+padding: 15px;
+}
+
+a {
+color: #08c;
+}
+
+
+#jfmfs-friend-filter-text {
+height: 17px;
+}
+#jfmfs-friend-selector{
+height:530px;
+}
+#jfmfs-friend-container {
+height: 500px;
+}
+
+#json {
+background: #fafafa;
+padding: 10px;
+border: 1px solid #ccc;
+display: block;
+font-family: monospace;
+overflow-x: scroll;
+}
+
+#jfmfs-friend-selector {
+width: 100% !important;
+}
+
+</style>
+
+<script>
+
+window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '193233054164585', // App ID
+      status     : true, // check login status
+      cookie     : true, // enable cookies to allow the server to access the session
+      xfbml      : true,  // parse XFBML,
+      version: 'v2.3'
+    });
+    login();
+};
+
+
+login = function()
+{
+	FB.login(function(response) {
+		meinit();
+    });
+}
+
+
+meinit = function() {
+	FB.api('/me', function(response) {
+	$("#welcome").show();
+	$("#login").hide();
+	$("#show-friends").show();
+	$("#selected-friends").show();
+	$("#jfmfs-container").show();
+	$("#json").show();
+	$("#jfmfs-container").jfmfs({
+		max_selected: 50,
+		max_selected_message: "{0} of {1} selected",
+		friend_fields: "id,name,last_name",
+		pre_selected_friends: [],
+		exclude_friends: [],
+		sorter: function(a, b) {
+			if (!a || !b || !a.last_name || !b.last_name) return;
+			var x = a.last_name.toLowerCase();
+			var y = b.last_name.toLowerCase();
+			return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+		}
+	});
+	});
+}
+
+
+autogen = function(n)
+{
+	var data = [];
+	$("#json").html("");
+  	$(".jfmfs-friend").each(function(i, friend) {
+  		if (i>0 && i%n==0)
+  		{
+  		$("#json").append(JSON.stringify(data)+"\n");
+  		data = [];
+  		}
+  		data.push({
+  			id: $(friend).attr("id"),
+  			name: $(friend).find(".friend-name").text()
+  		});
+  	});
+  	$("#json").append(JSON.stringify(data)+"\n");
+}
+
+
+$(document).ready(function(){
+
+$("#show-friends").live("click", function() {
+	var friendSelector = $("#jfmfs-container").data('jfmfs');
+	$("#selected-friends").html(friendSelector.getSelectedIds().join(', '));
+});
+
+$("#jfmfs-container").bind("jfmfs.selection.changed", function(e, data) {
+	$("#json").html(JSON.stringify(data));
+});
+
+$("#auto-list-n").keyup(function(e)
+{
+	if (e.keyCode!=13) return;
+	var n = $(this).val();
+	if (n>50) {
+		alert("you can't generate auto-list for 50+ users!");
+		return;
+	}
+	autogen(n);
+})
+
+});
+
+</script>
+</head>
+<body>
+<div id="fb-root"></div>
+<script>
+(function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "//connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div id="login">
+	<h1><a onclick="login()">Login</a></h1>
+</div>
+
+<div id="welcome" style="display:none">
+	<h2>Select your friends, so copy the list on the bottom.</h2>
+	<h4>Or, generate the full auto-list with <input type="text" id="auto-list-n" value="50" size="2"> users in.</a></h4>
+</div>
+
+<div id="selected-friends" style="display:none" style="height:30px"></div>
+<div id="jfmfs-container" style="display:none"></div>
+
+<pre id="json" style="display:none"></pre>
+
+</body>
+</html>
